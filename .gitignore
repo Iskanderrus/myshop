@@ -3,3 +3,4 @@
 */migrations/
 */__pycache__/
 /products/
+shop/static/img/no_image.png
