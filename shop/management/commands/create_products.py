@@ -51,10 +51,15 @@ class Command(BaseCommand):
                     self.stdout.write(
                         self.style.ERROR(f"Failed to download image for {name}.")
                     )
-            category = Category.objects.get(name=category_name.title())
+            
+            try:
+                category = Category.objects.get(name=category_name.title())
+            except Category.DoesNotExist:
+                self.stdout.write(self.style.ERROR(f"Category '{category_name}' does not exist. Skipping product '{name}'."))
+                continue
 
-            # Create a new Product instance
-            product = Product(
+            # Create or get the Product instance
+            product, created = Product.objects.get_or_create(
                 name=name,
                 slug=slug,
                 description=description,
@@ -62,14 +67,16 @@ class Command(BaseCommand):
                 category=category,
             )
 
+            if created:
+                self.stdout.write(self.style.SUCCESS(f"Product '{name}' created successfully."))
+            else:
+                self.stdout.write(self.style.WARNING(f"Product '{name}' already exists."))
+
             # If image was successfully downloaded, assign it to the product
             if image_file:
                 product.image.save(image_file.name, image_file)
 
-            # Save the product to the database
+            # Save any changes to the product
             product.save()
-            self.stdout.write(
-                self.style.SUCCESS(f"Product '{name}' created successfully.")
-            )
 
-        self.stdout.write(self.style.SUCCESS("All products created successfully."))
+        self.stdout.write(self.style.SUCCESS("All products processed successfully."))
